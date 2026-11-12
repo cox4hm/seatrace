@@ -226,7 +226,7 @@ table.t.ids tr.no td{color:var(--ink-3)}
 .layers summary{list-style:none;display:flex;align-items:center;gap:8px;height:32px;padding:0 10px;cursor:pointer;font:600 11.5px var(--f-display);letter-spacing:.08em;text-transform:uppercase}
 .layers summary::-webkit-details-marker{display:none}
 .layers summary .sp{flex:1}
-.layers .lbody{padding:4px 10px 10px;display:grid;gap:2px;border-top:1px solid var(--line)}
+.layers .lbody{padding:4px 10px 10px;display:grid;gap:2px;border-top:1px solid var(--line);max-height:calc(100vh - 250px);overflow-y:auto;overscroll-behavior:contain}
 .layers label{display:flex;align-items:center;gap:8px;padding:3px 0;font-size:12px;color:var(--ink-2);cursor:pointer}
 .layers input{accent-color:var(--accent);margin:0}
 .sw{width:16px;height:10px;border-radius:2px;flex:none}
@@ -246,12 +246,14 @@ table.t.ids tr.no td{color:var(--ink-3)}
 .livebtn{height:28px;padding:0 10px;border-radius:3px;border:1px solid var(--line-2);background:var(--panel-2);font:600 11px var(--f-mono);letter-spacing:.08em}
 .livebtn[aria-pressed="true"]{border-color:#4fc58b88;color:var(--ok)}
 .leaflet-bottom.leaflet-right{bottom:58px}
-.intro{position:absolute;left:12px;top:12px;z-index:1000;max-width:330px;background:#0c1a24f2;border:1px solid var(--line-2);border-left:3px solid var(--accent);border-radius:4px;padding:10px 12px;display:grid;gap:6px;box-shadow:0 4px 18px #0009}
+.intro{position:absolute;left:12px;top:12px;z-index:1000;max-width:330px;max-height:calc(100% - 24px);overflow:auto;background:#0c1a24f2;border:1px solid var(--line-2);border-left:3px solid var(--accent);border-radius:4px;padding:10px 12px;display:grid;gap:6px;box-shadow:0 4px 18px #0009}
 .intro p{margin:0;color:var(--ink-2)}
 .intro .row{display:flex;gap:8px;align-items:center}
 /* briefing */
 .brief{position:absolute;left:12px;top:12px;z-index:1001;width:min(420px,calc(100% - 250px));background:#0c1a24f7;border:1px solid var(--line-2);border-radius:4px;box-shadow:0 8px 30px #000b;display:none}
-.brief.on{display:block}
+.brief.on{display:flex;flex-direction:column;max-height:calc(100% - 84px)}
+.brief .bh,.brief .bf{flex:none}
+.brief .bb{overflow-y:auto;min-height:0;overscroll-behavior:contain}
 .brief .bh{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line)}
 .brief .bh .k{font:600 10.5px var(--f-mono);letter-spacing:.12em;color:var(--accent)}
 .brief .bh .sp{flex:1}
@@ -468,7 +470,18 @@ table.t td b{color:var(--ink)}
 .hud .last b{color:var(--ink)}
 .hud .bar{height:3px;background:var(--line);border-radius:2px;overflow:hidden}.hud .bar i{display:block;height:100%;background:var(--accent)}
 .hud .row{display:flex;gap:6px}
-@media (max-width:860px){ .seg{display:none} }
+@media (max-width:860px){
+  .seg{order:4;width:100%;display:flex}
+  .seg button{flex:1;padding:0 6px}
+  .aoi-btn{right:auto;left:12px;top:10px}
+  .intro{top:52px;max-width:calc(100% - 220px)}
+  .aoibar{left:12px;right:12px;top:52px}
+  .brief.on{max-height:calc(100% - 84px)}
+  .layers .lbody{max-height:calc(68vh - 150px)}
+  .stiles{grid-template-columns:repeat(2,1fr)}
+}
+@media (max-width:560px){ .intro{max-width:calc(100% - 24px);top:auto;bottom:12px} .layers{width:160px} }
+@media (max-height:760px) and (min-width:861px){ .brief .claim{font-size:17px} .brief h3{font-size:17px} .brief .bb{gap:6px;padding:10px 12px} }
 @media (max-width:1640px){ .stats .stat.opt{display:none} }
 @media (max-width:1240px){ .stats{display:none} }
 .gcard .g1 .gfwok{margin-left:auto}
@@ -1724,7 +1737,7 @@ var ENGINE = (function () {
     var me = i, placed = false; function place() { if (placed || S.brief !== me) return; placed = true; addNotes(s.notes); }
     map.once('moveend', place); setTimeout(place, 1300);
     if (s.replay) setTimeout(function () { if (S.brief === i) runReplay(s); }, 1000);
-    var nb = $('b-next'); if (nb) nb.focus();
+    var nb = $('b-next'); if (nb) nb.focus({ preventScroll: true }); var bb = $('brief').querySelector('.bb'); if (bb) bb.scrollTop = 0;
   }
 
   /* ---------- exports ---------- */
@@ -2795,7 +2808,7 @@ var ENGINE = (function () {
       case 'aoi-clear': return aoiClear();
       case 'cw-csv': return copy(cwCsv(), 'Cable watch CSV');
       case 'cw-how': return cwHowSheet();
-      case 'cwf-open': CWU.form = true; renderCables(); var fd = $('cwf-date'); if (fd) fd.focus(); return;
+      case 'cwf-open': CWU.form = true; renderCables(); var fd = $('cwf-date'); if (fd) fd.focus({ preventScroll: true }); return;
       case 'cwf-cancel': CWU.form = false; return renderCables();
       case 'cwf-save': return cwSaveFault();
       case 'cw-close': S.cw = null; renderIntel(); renderCables(); return renderMap();
@@ -2817,6 +2830,7 @@ var ENGINE = (function () {
     else if (S.brief >= 0 && e.key === 'ArrowRight') brief(S.brief + 1 >= STEPS.length ? -1 : S.brief + 1);
     else if (S.brief >= 0 && e.key === 'ArrowLeft') brief(Math.max(0, S.brief - 1));
   });
+  window.addEventListener('scroll', function () { if (window.innerWidth > 860 && (window.scrollY || window.scrollX)) window.scrollTo(0, 0); });
   window.addEventListener('resize', function () { drawHist(); map.invalidateSize(); if (S.view === 'timeline') renderTimeline(); });
 
   /* ---------- init ---------- */
